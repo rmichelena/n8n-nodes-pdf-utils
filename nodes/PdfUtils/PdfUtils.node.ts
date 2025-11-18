@@ -203,14 +203,10 @@ export class PdfUtils implements INodeType {
 			const pdfDoc = await PDFDocument.load(pdfBuffer);
 			const pageCount = pdfDoc.getPageCount();
 
-			if (pageCount < 2) {
-				throw new Error('PDF must have at least 2 pages to split');
-			}
-
 			const results: INodeExecutionData[] = [];
 			const baseFileName = originalFileName.replace(/\.pdf$/i, '');
 
-			// Split each page
+			// Split each page (works for single-page PDFs too)
 			for (let i = 0; i < pageCount; i++) {
 				// Create new document with single page
 				const newPdf = await PDFDocument.create();

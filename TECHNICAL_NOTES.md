@@ -75,7 +75,7 @@ const loadingTask = pdfjsLib.getDocument({
 
 ```json
 {
-  "pdfjs-dist": "^3.11.174",  // Parsing y extracción de texto
+  "pdfjs-dist": "^5.4.394",  // Parsing y extracción de texto
   "pdf-lib": "^1.17.1"         // Manipulación y splitting
 }
 ```
@@ -112,6 +112,83 @@ npm run build
 ```
 
 Si funciona correctamente, significa que el nodo es 100% portable y no requiere dependencias nativas.
+
+## Decisión de Diseño: NO Pass-Through de Binarios
+
+Este nodo **intencionalmente** NO preserva binarios upstream. Esta es una decisión de diseño, no un bug.
+
+### Comportamiento de la Operación "Inspect"
+
+**Código (PdfUtils.node.ts:96-101):**
+```typescript
+if (operation === 'inspect') {
+  const result = await PdfUtils.prototype.inspectPdf.call(this, pdfBuffer, itemIndex);
+  returnData.push({
+    json: result,  // ← Solo retorna el análisis
+    pairedItem: { item: itemIndex },
+  });
+}
+```
+
+**Comportamiento:**
+- La operación Inspect solo retorna el análisis del PDF (pageCount, isVectorial, etc.)
+- **NO** preserva el JSON upstream del item original
+- **NO** preserva los binarios (incluyendo el PDF original)
+
+**Razón:**
+- Este nodo está diseñado para **análisis** de PDFs, no para transformación de flujo
+- El PDF ya fue analizado, no hay necesidad de mantenerlo en el flujo
+- Simplifica la lógica y reduce uso de memoria en workflows grandes
+
+### Comportamiento de la Operación "Split"
+
+**Código (PdfUtils.node.ts:115-125):**
+```typescript
+splitResults.forEach((splitItem: INodeExecutionData, pageIndex: number) => {
+  returnData.push({
+    json: {
+      ...items[itemIndex].json,  // ✅ Preserva JSON upstream
+      pageNumber: pageIndex + 1,
+      originalFileName: binaryData.fileName || 'document.pdf',
+    },
+    binary: splitItem.binary,  // ← Reemplaza TODOS los binarios
+    pairedItem: { item: itemIndex },
+  });
+});
+```
+
+**Comportamiento:**
+- Split **SÍ** preserva el JSON upstream (`...items[itemIndex].json`)
+- Split **NO** preserva binarios adicionales (thumbnails, attachments, etc.)
+- Solo retorna el binary del PDF splitteado con el nombre especificado en `outputBinaryProperty`
+
+**Razón:**
+- Este nodo está diseñado para **split de PDFs**, no para gestión general de binarios
+- Cada página saliente debe tener exactamente un binario: la página extraída
+- Si hubiera otros binarios (thumbnails, etc.), causaría confusión sobre qué binario es la página
+
+### ¿Qué hacer si necesito preservar binarios?
+
+Si tu workflow necesita mantener binarios adicionales, tienes dos opciones:
+
+**Opción 1: Usar nodo Set antes de PDF Utils**
+```
+Input → Set (guardar binarios en JSON) → PDF Utils → Set (restaurar binarios)
+```
+
+**Opción 2: Usar nodo Merge después**
+```
+Input → Split (mantener referencia) → PDF Utils → Merge (combinar resultados)
+```
+
+### Resumen
+
+| Operación | JSON Upstream | Binarios Upstream | Binarios Output |
+|-----------|---------------|-------------------|-----------------|
+| Inspect   | ❌ No         | ❌ No             | ❌ Ninguno      |
+| Split     | ✅ Sí         | ❌ No             | ✅ Solo páginas |
+
+**Filosofía**: Este nodo hace **una sola cosa bien** (Unix philosophy). No intenta ser un nodo general de manipulación de datos.
 
 ## Referencias
 

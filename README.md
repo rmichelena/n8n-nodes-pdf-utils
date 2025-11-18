@@ -103,12 +103,12 @@ HTTP Request (download PDF)
 ## Technical Details
 
 ### Dependencies
-- `pdfjs-dist` (v3.11.174): For PDF analysis and text extraction
+- `pdfjs-dist` (v5.4.394): For PDF analysis and text extraction (uses legacy build for Node.js)
 - `pdf-lib` (v1.17.1): For PDF manipulation and splitting
 
 ### Why These Libraries?
 
-1. **pdfjs-dist**: Mozilla's PDF.js library - battle-tested, used in Firefox (headless mode, no canvas needed)
+1. **pdfjs-dist**: Mozilla's PDF.js library - battle-tested, used in Firefox (headless mode, no canvas needed). We use the legacy build (`pdfjs-dist/legacy/build/pdf.mjs`) which is specifically designed for Node.js environments without DOM dependencies.
 2. **pdf-lib**: Pure JavaScript, no native dependencies, excellent for manipulation
 3. **100% npm packages**: No system-level dependencies (like Poppler, Ghostscript) and no canvas/native modules!
 
