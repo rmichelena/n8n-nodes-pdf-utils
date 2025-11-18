@@ -21,8 +21,8 @@ try {
 
 // 2. Verificar pdfjs-dist
 try {
-  const pdfjsLib = require('pdfjs-dist');
-  console.log('✅ pdfjs-dist importado correctamente (sin warnings de canvas)');
+  const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.mjs');
+  console.log('✅ pdfjs-dist importado correctamente (legacy build para Node.js)');
   console.log(`   Versión: ${pdfjsLib.version || 'desconocida'}\n`);
 } catch (e) {
   console.log('❌ Error importando pdfjs-dist:');
@@ -55,7 +55,7 @@ if (fs.existsSync(testPdfPath)) {
   
   (async () => {
     try {
-      const pdfjsLib = require('pdfjs-dist');
+      const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.mjs');
       pdfjsLib.GlobalWorkerOptions.workerSrc = '';
       
       const pdfBuffer = fs.readFileSync(testPdfPath);

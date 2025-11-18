@@ -19,10 +19,9 @@ Para estas operaciones, `pdfjs-dist` funciona perfectamente en **modo headless**
 ## Configuración Headless
 
 ```typescript
-// IMPORTANTE: Usar el import principal, NO /legacy/build/pdf
-// El módulo legacy intenta cargar canvas automáticamente generando warnings
-import * as pdfjsLib from 'pdfjs-dist';  // ✅ Correcto - sin warnings
-// import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';  // ❌ Genera warnings de canvas
+// IMPORTANTE: En pdfjs-dist v5+, el build principal requiere DOMMatrix (browser-only)
+// Para Node.js headless, DEBEMOS usar el legacy build (.mjs)
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';  // ✅ Correcto para Node.js
 
 // Deshabilitar el worker (evita dependencias de DOM/canvas)
 pdfjsLib.GlobalWorkerOptions.workerSrc = '';
@@ -37,7 +36,11 @@ const loadingTask = pdfjsLib.getDocument({
 });
 ```
 
-**Nota sobre el módulo legacy**: El path `pdfjs-dist/legacy/build/pdf` intenta hacer polyfill de `DOMMatrix` y `Path2D` importando canvas automáticamente al cargar, generando warnings incluso cuando no se usa rendering. El import principal `pdfjs-dist` evita esto completamente.
+**Cambios en pdfjs-dist v5+**:
+- El build principal (`pdfjs-dist`) ahora requiere `DOMMatrix` nativo (solo funciona en browsers)
+- Para Node.js, Mozilla recomienda explícitamente usar el legacy build
+- El legacy build en v5+ está como `.mjs` y funciona sin warnings de canvas
+- En v3.x el import principal funcionaba en Node.js, pero v3.x tiene vulnerabilidades de seguridad conocidas
 
 ## Ventajas de NO usar Canvas
 
