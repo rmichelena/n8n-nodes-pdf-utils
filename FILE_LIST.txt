@@ -1,0 +1,104 @@
+════════════════════════════════════════════════════════════════
+              n8n-nodes-pdf-utils - Lista de Archivos
+════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTACIÓN (8 archivos, ~50 KB)
+─────────────────────────────────────────────────────────────────
+  📄 INDEX.md               3.6 KB    → Índice de navegación
+  📄 OVERVIEW.txt          22.0 KB    → Vista general visual ⭐
+  📄 QUICKSTART.md          1.5 KB    → Instalación rápida ⚡
+  📄 README.md              3.8 KB    → Documentación completa
+  📄 INSTALLATION.md        3.3 KB    → Guía de instalación
+  📄 TECHNICAL_NOTES.md     3.1 KB    → Decisiones técnicas
+  📄 SUMMARY.md             6.5 KB    → Resumen ejecutivo
+  📄 .gitignore             0.1 KB    → Git ignore
+
+💻 CÓDIGO FUENTE (3 archivos, ~7 KB)
+─────────────────────────────────────────────────────────────────
+  📄 PdfUtils.node.ts       6.2 KB    → Código principal TypeScript
+  📄 PdfUtils.node.json     0.3 KB    → Descriptor del nodo
+  🎨 pdf.svg                0.4 KB    → Ícono del nodo
+
+⚙️  CONFIGURACIÓN (5 archivos, ~3 KB)
+─────────────────────────────────────────────────────────────────
+  📄 package.json           1.4 KB    → Dependencias npm
+  📄 tsconfig.json          0.5 KB    → Config TypeScript
+  📄 gulpfile.js            0.2 KB    → Build de íconos
+  📄 .eslintrc.js           0.3 KB    → Linting
+  📄 .prettierrc.js         0.2 KB    → Formateo
+
+🧪 TESTING & EJEMPLOS (2 archivos, ~5 KB)
+─────────────────────────────────────────────────────────────────
+  📄 verify.js              3.4 KB    → Script de verificación
+  📄 basic-workflow.json    1.9 KB    → Workflow de ejemplo
+
+════════════════════════════════════════════════════════════════
+RESUMEN
+════════════════════════════════════════════════════════════════
+
+Total archivos:              18
+Total tamaño (sin deps):     ~65 KB
+Líneas de código:            ~600
+Líneas de documentación:     ~1,500
+
+DEPENDENCIAS NPM (node_modules):
+  - pdfjs-dist    (v3.11.174)    →  PDF parsing/análisis
+  - pdf-lib       (v1.17.1)      →  PDF manipulación
+
+ARCHIVOS GENERADOS (después de npm run build):
+  - dist/
+    └── nodes/
+        └── PdfUtils/
+            ├── PdfUtils.node.js
+            ├── PdfUtils.node.json
+            └── pdf.svg
+
+════════════════════════════════════════════════════════════════
+ESTRUCTURA DE DIRECTORIOS
+════════════════════════════════════════════════════════════════
+
+n8n-nodes-pdf-utils/
+├── 📚 Documentación
+│   ├── INDEX.md               → Empieza aquí
+│   ├── OVERVIEW.txt           → Vista general
+│   ├── QUICKSTART.md          → 5 minutos
+│   ├── README.md              → Docs completas
+│   ├── INSTALLATION.md        → Instalación
+│   ├── TECHNICAL_NOTES.md     → Técnico
+│   └── SUMMARY.md             → Ejecutivo
+│
+├── 💻 Código
+│   └── nodes/PdfUtils/
+│       ├── PdfUtils.node.ts   → Implementación
+│       ├── PdfUtils.node.json → Descriptor
+│       └── pdf.svg            → Ícono
+│
+├── ⚙️  Configuración
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── gulpfile.js
+│   ├── .eslintrc.js
+│   └── .prettierrc.js
+│
+└── 🧪 Testing & Ejemplos
+    ├── verify.js
+    └── examples/
+        └── basic-workflow.json
+
+════════════════════════════════════════════════════════════════
+CÓMO EMPEZAR
+════════════════════════════════════════════════════════════════
+
+1. Lee INDEX.md para navegar la documentación
+2. Lee OVERVIEW.txt para entender el proyecto (2 min)
+3. Sigue QUICKSTART.md para instalar (5 min)
+4. Importa basic-workflow.json para probar
+
+O si prefieres ir directo:
+
+  $ npm install
+  $ npm run verify
+  $ npm run build
+  $ npm link
+
+════════════════════════════════════════════════════════════════

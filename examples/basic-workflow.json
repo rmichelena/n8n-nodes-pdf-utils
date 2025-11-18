@@ -1,0 +1,86 @@
+{
+  "name": "PDF Utils - Example Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+        "options": {}
+      },
+      "id": "1",
+      "name": "HTTP Request - Download PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "inspect",
+        "binaryPropertyName": "data",
+        "textThreshold": 50
+      },
+      "id": "2",
+      "name": "PDF Utils - Inspect",
+      "type": "n8n-nodes-pdf-utils.pdfUtils",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "split",
+        "binaryPropertyName": "data",
+        "outputBinaryProperty": "data"
+      },
+      "id": "3",
+      "name": "PDF Utils - Split",
+      "type": "n8n-nodes-pdf-utils.pdfUtils",
+      "typeVersion": 1,
+      "position": [450, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isMultiPage }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "4",
+      "name": "IF - Is Multi-Page?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "HTTP Request - Download PDF": {
+      "main": [
+        [
+          {
+            "node": "PDF Utils - Inspect",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PDF Utils - Split",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF Utils - Inspect": {
+      "main": [
+        [
+          {
+            "node": "IF - Is Multi-Page?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
