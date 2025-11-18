@@ -56,12 +56,12 @@ if (fs.existsSync(testPdfPath)) {
   (async () => {
     try {
       const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.mjs');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-      
+
       const pdfBuffer = fs.readFileSync(testPdfPath);
       const loadingTask = pdfjsLib.getDocument({
         data: new Uint8Array(pdfBuffer),
         verbosity: 0,
+        disableWorker: true,
         useWorkerFetch: false,
         isEvalSupported: false,
         useSystemFonts: true,

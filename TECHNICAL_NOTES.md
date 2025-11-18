@@ -23,18 +23,24 @@ Para estas operaciones, `pdfjs-dist` funciona perfectamente en **modo headless**
 // Para Node.js headless, DEBEMOS usar el legacy build (.mjs)
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';  // ✅ Correcto para Node.js
 
-// Deshabilitar el worker (evita dependencias de DOM/canvas)
-pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+// NO configurar GlobalWorkerOptions.workerSrc - no es necesario con disableWorker: true
 
 // Opciones para modo headless
 const loadingTask = pdfjsLib.getDocument({
   data: new Uint8Array(pdfBuffer),
   verbosity: 0,              // Sin logs
-  useWorkerFetch: false,     // No usar worker
+  disableWorker: true,       // CRÍTICO: Desactiva el worker en Node.js
+  useWorkerFetch: false,     // No usar worker fetch
   isEvalSupported: false,    // No evaluar código
   useSystemFonts: true,      // Usar fuentes del sistema si están disponibles
 });
 ```
+
+**Configuración del Worker**:
+- **disableWorker: true** es NECESARIO en Node.js para evitar el error "Setting up fake worker failed"
+- NO usar `GlobalWorkerOptions.workerSrc = ''` - esto causa errores
+- El worker solo es necesario en browsers para no bloquear el UI thread
+- En Node.js, el procesamiento síncrono es más eficiente y no requiere worker
 
 **Cambios en pdfjs-dist v5+**:
 - El build principal (`pdfjs-dist`) ahora requiere `DOMMatrix` nativo (solo funciona en browsers)

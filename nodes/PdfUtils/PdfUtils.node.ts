@@ -9,9 +9,6 @@ import {
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { PDFDocument } from 'pdf-lib';
 
-// Disable worker to avoid canvas/DOM dependencies
-pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-
 export class PdfUtils implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'PDF Utils',
@@ -152,14 +149,15 @@ export class PdfUtils implements INodeType {
 		const textThreshold = this.getNodeParameter('textThreshold', itemIndex) as number;
 
 		try {
-			// Load PDF with pdfjs-dist in headless mode (no canvas required)
+			// Load PDF with pdfjs-dist in headless mode (no canvas/worker required)
 			const loadingTask = pdfjsLib.getDocument({
 				data: new Uint8Array(pdfBuffer),
 				verbosity: 0,
+				disableWorker: true, // Required for Node.js to avoid worker errors
 				useWorkerFetch: false,
 				isEvalSupported: false,
 				useSystemFonts: true,
-			});
+			} as any);
 
 			const pdfDocument = await loadingTask.promise;
 			const pageCount = pdfDocument.numPages;
