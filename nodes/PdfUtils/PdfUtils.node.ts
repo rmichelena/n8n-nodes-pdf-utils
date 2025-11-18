@@ -153,11 +153,11 @@ export class PdfUtils implements INodeType {
 			const loadingTask = pdfjsLib.getDocument({
 				data: new Uint8Array(pdfBuffer),
 				verbosity: 0,
-				disableWorker: true, // Required for Node.js to avoid worker errors
+				worker: null as any, // Disable worker in Node.js - types don't allow null but runtime requires it
 				useWorkerFetch: false,
 				isEvalSupported: false,
 				useSystemFonts: true,
-			} as any);
+			});
 
 			const pdfDocument = await loadingTask.promise;
 			const pageCount = pdfDocument.numPages;

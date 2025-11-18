@@ -61,7 +61,7 @@ if (fs.existsSync(testPdfPath)) {
       const loadingTask = pdfjsLib.getDocument({
         data: new Uint8Array(pdfBuffer),
         verbosity: 0,
-        disableWorker: true,
+        worker: null,
         useWorkerFetch: false,
         isEvalSupported: false,
         useSystemFonts: true,

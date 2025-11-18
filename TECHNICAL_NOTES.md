@@ -23,13 +23,13 @@ Para estas operaciones, `pdfjs-dist` funciona perfectamente en **modo headless**
 // Para Node.js headless, DEBEMOS usar el legacy build (.mjs)
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';  // ✅ Correcto para Node.js
 
-// NO configurar GlobalWorkerOptions.workerSrc - no es necesario con disableWorker: true
+// NO configurar GlobalWorkerOptions.workerSrc - no es necesario
 
 // Opciones para modo headless
 const loadingTask = pdfjsLib.getDocument({
   data: new Uint8Array(pdfBuffer),
   verbosity: 0,              // Sin logs
-  disableWorker: true,       // CRÍTICO: Desactiva el worker en Node.js
+  worker: null,              // CRÍTICO: Desactiva el worker en Node.js
   useWorkerFetch: false,     // No usar worker fetch
   isEvalSupported: false,    // No evaluar código
   useSystemFonts: true,      // Usar fuentes del sistema si están disponibles
@@ -37,7 +37,8 @@ const loadingTask = pdfjsLib.getDocument({
 ```
 
 **Configuración del Worker**:
-- **disableWorker: true** es NECESARIO en Node.js para evitar el error "Setting up fake worker failed"
+- **worker: null** es NECESARIO en Node.js para evitar el error "Setting up fake worker failed"
+- Este parámetro SÍ está en los tipos oficiales de pdfjs-dist (DocumentInitParameters)
 - NO usar `GlobalWorkerOptions.workerSrc = ''` - esto causa errores
 - El worker solo es necesario en browsers para no bloquear el UI thread
 - En Node.js, el procesamiento síncrono es más eficiente y no requiere worker
