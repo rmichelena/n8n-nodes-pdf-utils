@@ -86,10 +86,10 @@ export class PdfUtils implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const operation = this.getNodeParameter('operation', 0) as string;
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
+				const operation = this.getNodeParameter('operation', itemIndex) as string;
 				const binaryPropertyName = this.getNodeParameter('binaryPropertyName', itemIndex) as string;
 				const binaryData = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
 
@@ -97,17 +97,25 @@ export class PdfUtils implements INodeType {
 				const pdfBuffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);
 
 				if (operation === 'inspect') {
-					const result = await this.inspectPdf(pdfBuffer, itemIndex);
+					const result = await PdfUtils.prototype.inspectPdf.call(this, pdfBuffer, itemIndex);
 					returnData.push({
 						json: result,
 						pairedItem: { item: itemIndex },
 					});
 				} else if (operation === 'split') {
-					const outputBinaryProperty = this.getNodeParameter('outputBinaryProperty', itemIndex) as string;
-					const splitResults = await this.splitPdf(pdfBuffer, binaryData.fileName || 'document.pdf', outputBinaryProperty);
-					
+					const outputBinaryProperty = this.getNodeParameter(
+						'outputBinaryProperty',
+						itemIndex,
+					) as string;
+					const splitResults = await PdfUtils.prototype.splitPdf.call(
+						this,
+						pdfBuffer,
+						binaryData.fileName || 'document.pdf',
+						outputBinaryProperty,
+					);
+
 					// Add each page as a separate item
-					splitResults.forEach((splitItem, pageIndex) => {
+					splitResults.forEach((splitItem: INodeExecutionData, pageIndex: number) => {
 						returnData.push({
 							json: {
 								pageNumber: pageIndex + 1,
@@ -135,7 +143,11 @@ export class PdfUtils implements INodeType {
 		return [returnData];
 	}
 
-	private async inspectPdf(pdfBuffer: Buffer, itemIndex: number): Promise<any> {
+	private async inspectPdf(
+		this: IExecuteFunctions,
+		pdfBuffer: Buffer,
+		itemIndex: number,
+	): Promise<any> {
 		const textThreshold = this.getNodeParameter('textThreshold', itemIndex) as number;
 
 		try {
@@ -156,9 +168,7 @@ export class PdfUtils implements INodeType {
 			const textContent = await firstPage.getTextContent();
 
 			// Extract all text from first page
-			const text = textContent.items
-				.map((item: any) => ('str' in item ? item.str : ''))
-				.join('');
+			const text = textContent.items.map((item: any) => ('str' in item ? item.str : '')).join('');
 
 			const textLength = text.length;
 			const isVectorial = textLength > textThreshold;
@@ -178,23 +188,24 @@ export class PdfUtils implements INodeType {
 			throw new NodeOperationError(
 				this.getNode(),
 				`Failed to inspect PDF: ${(error as Error).message}`,
-				{ itemIndex }
+				{ itemIndex },
 			);
 		}
 	}
 
 	private async splitPdf(
+		this: IExecuteFunctions,
 		pdfBuffer: Buffer,
 		originalFileName: string,
-		outputBinaryProperty: string
+		outputBinaryProperty: string,
 	): Promise<INodeExecutionData[]> {
 		try {
 			// Load PDF with pdf-lib
 			const pdfDoc = await PDFDocument.load(pdfBuffer);
 			const pageCount = pdfDoc.getPageCount();
 
-			if (pageCount === 1) {
-				throw new Error('PDF has only one page, nothing to split');
+			if (pageCount < 2) {
+				throw new Error('PDF must have at least 2 pages to split');
 			}
 
 			const results: INodeExecutionData[] = [];
@@ -216,7 +227,7 @@ export class PdfUtils implements INodeType {
 				const binaryData = await this.helpers.prepareBinaryData(
 					buffer,
 					fileName,
-					'application/pdf'
+					'application/pdf',
 				);
 
 				results.push({
@@ -231,7 +242,7 @@ export class PdfUtils implements INodeType {
 		} catch (error) {
 			throw new NodeOperationError(
 				this.getNode(),
-				`Failed to split PDF: ${(error as Error).message}`
+				`Failed to split PDF: ${(error as Error).message}`,
 			);
 		}
 	}

@@ -16,9 +16,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/n8n-nodes-pdf-utils.git"
+    "url": "https://github.com/infinitek-pe/n8n-nodes-pdf-utils.git"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
@@ -38,17 +38,18 @@
     ]
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^5.0.0",
-    "eslint": "^8.0.0",
-    "eslint-plugin-n8n-nodes-base": "^1.11.0",
-    "gulp": "^4.0.2",
-    "n8n-workflow": "^1.0.0",
-    "prettier": "^2.7.1",
-    "typescript": "^4.9.0"
+    "@types/node": "^20.19.25",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.4",
+    "gulp": "^5.0.0",
+    "n8n-workflow": "^1.118.0",
+    "prettier": "^3.0.0",
+    "typescript": "~5.3.3"
   },
   "dependencies": {
-    "pdfjs-dist": "^3.11.174",
-    "pdf-lib": "^1.17.1"
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^3.11.174"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
