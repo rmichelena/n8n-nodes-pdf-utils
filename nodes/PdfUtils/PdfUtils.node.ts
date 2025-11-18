@@ -37,6 +37,12 @@ export class PdfUtils implements INodeType {
 						action: 'Inspect PDF file',
 					},
 					{
+						name: 'Inspect and Split',
+						value: 'inspectAndSplit',
+						description: 'Inspect PDF and split only if not vectorial',
+						action: 'Inspect and conditionally split PDF',
+					},
+					{
 						name: 'Split',
 						value: 'split',
 						description: 'Split multi-page PDF into individual pages',
@@ -59,7 +65,7 @@ export class PdfUtils implements INodeType {
 				type: 'number',
 				displayOptions: {
 					show: {
-						operation: ['inspect'],
+						operation: ['inspect', 'inspectAndSplit'],
 					},
 				},
 				default: 50,
@@ -71,7 +77,7 @@ export class PdfUtils implements INodeType {
 				type: 'string',
 				displayOptions: {
 					show: {
-						operation: ['split'],
+						operation: ['split', 'inspectAndSplit'],
 					},
 				},
 				default: 'data',
@@ -96,9 +102,52 @@ export class PdfUtils implements INodeType {
 				if (operation === 'inspect') {
 					const result = await PdfUtils.prototype.inspectPdf.call(this, pdfBuffer, itemIndex);
 					returnData.push({
-						json: result,
+						json: {
+							...items[itemIndex].json,
+							...result,
+						},
+						binary: items[itemIndex].binary,
 						pairedItem: { item: itemIndex },
 					});
+				} else if (operation === 'inspectAndSplit') {
+					const result = await PdfUtils.prototype.inspectPdf.call(this, pdfBuffer, itemIndex);
+
+					if (result.isVectorial) {
+						// Vectorial PDF: pass through with inspection results
+						returnData.push({
+							json: {
+								...items[itemIndex].json,
+								...result,
+							},
+							binary: items[itemIndex].binary,
+							pairedItem: { item: itemIndex },
+						});
+					} else {
+						// Non-vectorial PDF: split into pages
+						const outputBinaryProperty = this.getNodeParameter(
+							'outputBinaryProperty',
+							itemIndex,
+						) as string;
+						const splitResults = await PdfUtils.prototype.splitPdf.call(
+							this,
+							pdfBuffer,
+							binaryData.fileName || 'document.pdf',
+							outputBinaryProperty,
+						);
+
+						splitResults.forEach((splitItem: INodeExecutionData, pageIndex: number) => {
+							returnData.push({
+								json: {
+									...items[itemIndex].json,
+									...result,
+									pageNumber: pageIndex + 1,
+									originalFileName: binaryData.fileName || 'document.pdf',
+								},
+								binary: splitItem.binary,
+								pairedItem: { item: itemIndex },
+							});
+						});
+					}
 				} else if (operation === 'split') {
 					const outputBinaryProperty = this.getNodeParameter(
 						'outputBinaryProperty',
