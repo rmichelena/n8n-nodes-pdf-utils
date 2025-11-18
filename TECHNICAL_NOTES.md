@@ -113,32 +113,34 @@ npm run build
 
 Si funciona correctamente, significa que el nodo es 100% portable y no requiere dependencias nativas.
 
-## Decisión de Diseño: NO Pass-Through de Binarios
+## Decisiones de Diseño: Manejo de Binarios
 
-Este nodo **intencionalmente** NO preserva binarios upstream. Esta es una decisión de diseño, no un bug.
+### Comportamiento de la Operación "Inspect" (v1.1.0+)
 
-### Comportamiento de la Operación "Inspect"
-
-**Código (PdfUtils.node.ts:96-101):**
+**Código (PdfUtils.node.ts:96-105):**
 ```typescript
 if (operation === 'inspect') {
   const result = await PdfUtils.prototype.inspectPdf.call(this, pdfBuffer, itemIndex);
   returnData.push({
-    json: result,  // ← Solo retorna el análisis
+    json: {
+      ...items[itemIndex].json,  // ✅ Preserva JSON upstream
+      ...result,
+    },
+    binary: items[itemIndex].binary,  // ✅ Preserva binarios
     pairedItem: { item: itemIndex },
   });
 }
 ```
 
-**Comportamiento:**
-- La operación Inspect solo retorna el análisis del PDF (pageCount, isVectorial, etc.)
-- **NO** preserva el JSON upstream del item original
-- **NO** preserva los binarios (incluyendo el PDF original)
+**Comportamiento (ACTUALIZADO en v1.1.0):**
+- La operación Inspect retorna el análisis del PDF (pageCount, isVectorial, etc.)
+- **SÍ** preserva el JSON upstream del item original
+- **SÍ** preserva los binarios (incluyendo el PDF original)
 
-**Razón:**
-- Este nodo está diseñado para **análisis** de PDFs, no para transformación de flujo
-- El PDF ya fue analizado, no hay necesidad de mantenerlo en el flujo
-- Simplifica la lógica y reduce uso de memoria en workflows grandes
+**Razón del cambio:**
+- Mayor utilidad en workflows: permite continuar procesando el PDF después del análisis
+- Consistencia con operaciones modernas de n8n
+- No afecta performance significativamente
 
 ### Comportamiento de la Operación "Split"
 
@@ -181,14 +183,45 @@ Input → Set (guardar binarios en JSON) → PDF Utils → Set (restaurar binari
 Input → Split (mantener referencia) → PDF Utils → Merge (combinar resultados)
 ```
 
+### Nueva Operación "Inspect and Split" (v1.1.0+)
+
+**Comportamiento condicional:**
+
+```typescript
+if (result.isVectorial) {
+  // PDF vectorial: pass-through con análisis
+  returnData.push({
+    json: { ...items[itemIndex].json, ...result },
+    binary: items[itemIndex].binary,
+  });
+} else {
+  // PDF no vectorial: split en páginas
+  splitResults.forEach((splitItem, pageIndex) => {
+    returnData.push({
+      json: { ...items[itemIndex].json, ...result, pageNumber: pageIndex + 1 },
+      binary: splitItem.binary,
+    });
+  });
+}
+```
+
+**Caso de uso:**
+- Simplifica workflows que necesitan manejar PDFs vectoriales y escaneados de forma diferente
+- Elimina la necesidad de nodos IF para branching manual
+- PDFs con texto → continúa como documento completo
+- PDFs escaneados → split automático para OCR página por página
+
 ### Resumen
 
-| Operación | JSON Upstream | Binarios Upstream | Binarios Output |
-|-----------|---------------|-------------------|-----------------|
-| Inspect   | ❌ No         | ❌ No             | ❌ Ninguno      |
-| Split     | ✅ Sí         | ❌ No             | ✅ Solo páginas |
+| Operación | JSON Upstream | Binarios Upstream | Binarios Output | Condicional |
+|-----------|---------------|-------------------|-----------------|-------------|
+| Inspect | ✅ Sí (v1.1.0+) | ✅ Sí (v1.1.0+) | ✅ PDF original | No |
+| Inspect and Split | ✅ Sí | ✅ Sí* | ✅ Original o páginas* | **Sí** |
+| Split | ✅ Sí | ❌ No | ✅ Solo páginas | No |
 
-**Filosofía**: Este nodo hace **una sola cosa bien** (Unix philosophy). No intenta ser un nodo general de manipulación de datos.
+\* Depende de si el PDF es vectorial o no
+
+**Filosofía**: Cada operación hace **una sola cosa bien** (Unix philosophy), pero "Inspect and Split" combina lógica de decisión común en workflows de PDF.
 
 ## Referencias
 

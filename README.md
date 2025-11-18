@@ -60,25 +60,55 @@ npm install n8n-nodes-pdf-utils
 - `Binary Property`: Name of the binary property (default: "data")
 - `Text Threshold`: Minimum text length to consider PDF as vectorial (default: 50)
 
-**Output** (JSON):
+**Output**: Single item with analysis + original PDF binary
 ```json
 {
-  "pageCount": 5,
-  "isMultiPage": true,
-  "isVectorial": false,
-  "textLength": 23,
-  "firstPageText": "Preview of first 200 characters..."
+  "json": {
+    "pageCount": 5,
+    "isMultiPage": true,
+    "isVectorial": false,
+    "textLength": 23,
+    "firstPageText": "Preview of first 200 characters..."
+  },
+  "binary": {
+    "data": "<original PDF>"
+  }
 }
 ```
 
 **Example workflow**:
 ```
-HTTP Request (download PDF) 
-  → PDF Utils (Inspect) 
-    → IF (isVectorial) 
-      → Route A (text processing)
-      → Route B (OCR processing)
+HTTP Request (download PDF)
+  → PDF Utils (Inspect)
+    → IF (isVectorial)
+      → Route A (text processing with PDF)
+      → Route B (OCR processing with PDF)
 ```
+
+### Inspect and Split Operation
+
+**Input**: Binary data containing a PDF file
+
+**Parameters**:
+- `Binary Property`: Name of the binary property (default: "data")
+- `Text Threshold`: Minimum text length to consider PDF as vectorial (default: 50)
+- `Output Binary Property`: Name for output binary property (default: "data")
+
+**Output**:
+- **If vectorial**: Single item with analysis + original PDF (pass-through)
+- **If not vectorial**: Multiple items, one per page (split)
+
+**Example workflow**:
+```
+HTTP Request (download PDF)
+  → PDF Utils (Inspect and Split)
+    → Vectorial PDFs pass through as-is
+    → Scanned PDFs split into pages automatically
+```
+
+**Use case**: Automatically handle different PDF types without manual branching:
+- Text-based PDFs (vectorial) → process as whole document
+- Scanned PDFs (non-vectorial) → OCR each page individually
 
 ### Split Operation
 
@@ -94,9 +124,9 @@ HTTP Request (download PDF)
 
 **Example workflow**:
 ```
-HTTP Request (download PDF) 
-  → PDF Utils (Split) 
-    → Loop Over Items 
+HTTP Request (download PDF)
+  → PDF Utils (Split)
+    → Loop Over Items
       → Process each page individually
 ```
 

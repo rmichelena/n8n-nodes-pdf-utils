@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf-utils",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Custom n8n node for PDF inspection and splitting using pure npm packages",
   "keywords": [
     "n8n-community-node-package",
