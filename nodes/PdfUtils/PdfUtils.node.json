@@ -1,13 +1,13 @@
 {
-  "node": "n8n-nodes-pdf-utils.PdfUtils",
-  "nodeVersion": "1.0",
-  "codexVersion": "1.0",
-  "categories": ["Utility"],
-  "resources": {
-    "primaryDocumentation": [
-      {
-        "url": "https://github.com/yourusername/n8n-nodes-pdf-utils"
-      }
-    ]
-  }
+	"node": "n8n-nodes-pdf-utils.PdfUtils",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Utility"],
+	"resources": {
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/infinitek-pe/n8n-nodes-pdf-utils"
+			}
+		]
+	}
 }

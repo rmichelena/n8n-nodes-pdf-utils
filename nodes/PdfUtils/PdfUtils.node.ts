@@ -6,11 +6,8 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { PDFDocument } from 'pdf-lib';
-
-// Disable worker to avoid canvas/DOM dependencies
-pdfjsLib.GlobalWorkerOptions.workerSrc = '';
 
 export class PdfUtils implements INodeType {
 	description: INodeTypeDescription = {
@@ -86,10 +83,10 @@ export class PdfUtils implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const operation = this.getNodeParameter('operation', 0) as string;
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
+				const operation = this.getNodeParameter('operation', itemIndex) as string;
 				const binaryPropertyName = this.getNodeParameter('binaryPropertyName', itemIndex) as string;
 				const binaryData = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
 
@@ -97,19 +94,28 @@ export class PdfUtils implements INodeType {
 				const pdfBuffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);
 
 				if (operation === 'inspect') {
-					const result = await this.inspectPdf(pdfBuffer, itemIndex);
+					const result = await PdfUtils.prototype.inspectPdf.call(this, pdfBuffer, itemIndex);
 					returnData.push({
 						json: result,
 						pairedItem: { item: itemIndex },
 					});
 				} else if (operation === 'split') {
-					const outputBinaryProperty = this.getNodeParameter('outputBinaryProperty', itemIndex) as string;
-					const splitResults = await this.splitPdf(pdfBuffer, binaryData.fileName || 'document.pdf', outputBinaryProperty);
-					
-					// Add each page as a separate item
-					splitResults.forEach((splitItem, pageIndex) => {
+					const outputBinaryProperty = this.getNodeParameter(
+						'outputBinaryProperty',
+						itemIndex,
+					) as string;
+					const splitResults = await PdfUtils.prototype.splitPdf.call(
+						this,
+						pdfBuffer,
+						binaryData.fileName || 'document.pdf',
+						outputBinaryProperty,
+					);
+
+					// Add each page as a separate item, preserving upstream JSON
+					splitResults.forEach((splitItem: INodeExecutionData, pageIndex: number) => {
 						returnData.push({
 							json: {
+								...items[itemIndex].json,
 								pageNumber: pageIndex + 1,
 								originalFileName: binaryData.fileName || 'document.pdf',
 							},
@@ -135,14 +141,19 @@ export class PdfUtils implements INodeType {
 		return [returnData];
 	}
 
-	private async inspectPdf(pdfBuffer: Buffer, itemIndex: number): Promise<any> {
+	private async inspectPdf(
+		this: IExecuteFunctions,
+		pdfBuffer: Buffer,
+		itemIndex: number,
+	): Promise<any> {
 		const textThreshold = this.getNodeParameter('textThreshold', itemIndex) as number;
 
 		try {
-			// Load PDF with pdfjs-dist in headless mode (no canvas required)
+			// Load PDF with pdfjs-dist in headless mode (no canvas/worker required)
 			const loadingTask = pdfjsLib.getDocument({
 				data: new Uint8Array(pdfBuffer),
 				verbosity: 0,
+				worker: null as any, // Disable worker in Node.js - types don't allow null but runtime requires it
 				useWorkerFetch: false,
 				isEvalSupported: false,
 				useSystemFonts: true,
@@ -156,9 +167,7 @@ export class PdfUtils implements INodeType {
 			const textContent = await firstPage.getTextContent();
 
 			// Extract all text from first page
-			const text = textContent.items
-				.map((item: any) => ('str' in item ? item.str : ''))
-				.join('');
+			const text = textContent.items.map((item: any) => ('str' in item ? item.str : '')).join('');
 
 			const textLength = text.length;
 			const isVectorial = textLength > textThreshold;
@@ -178,29 +187,26 @@ export class PdfUtils implements INodeType {
 			throw new NodeOperationError(
 				this.getNode(),
 				`Failed to inspect PDF: ${(error as Error).message}`,
-				{ itemIndex }
+				{ itemIndex },
 			);
 		}
 	}
 
 	private async splitPdf(
+		this: IExecuteFunctions,
 		pdfBuffer: Buffer,
 		originalFileName: string,
-		outputBinaryProperty: string
+		outputBinaryProperty: string,
 	): Promise<INodeExecutionData[]> {
 		try {
 			// Load PDF with pdf-lib
 			const pdfDoc = await PDFDocument.load(pdfBuffer);
 			const pageCount = pdfDoc.getPageCount();
 
-			if (pageCount === 1) {
-				throw new Error('PDF has only one page, nothing to split');
-			}
-
 			const results: INodeExecutionData[] = [];
 			const baseFileName = originalFileName.replace(/\.pdf$/i, '');
 
-			// Split each page
+			// Split each page (works for single-page PDFs too)
 			for (let i = 0; i < pageCount; i++) {
 				// Create new document with single page
 				const newPdf = await PDFDocument.create();
@@ -216,7 +222,7 @@ export class PdfUtils implements INodeType {
 				const binaryData = await this.helpers.prepareBinaryData(
 					buffer,
 					fileName,
-					'application/pdf'
+					'application/pdf',
 				);
 
 				results.push({
@@ -231,7 +237,7 @@ export class PdfUtils implements INodeType {
 		} catch (error) {
 			throw new NodeOperationError(
 				this.getNode(),
-				`Failed to split PDF: ${(error as Error).message}`
+				`Failed to split PDF: ${(error as Error).message}`,
 			);
 		}
 	}

@@ -34,7 +34,7 @@ Output: 5 items con PDFs individuales
 
 ```json
 {
-  "pdfjs-dist": "^3.11.174",  // Mozilla PDF.js (parsing, texto)
+  "pdfjs-dist": "^5.4.394",  // Mozilla PDF.js (parsing, texto) - legacy build para Node.js
   "pdf-lib": "^1.17.1"         // Manipulación de PDFs
 }
 ```
@@ -149,16 +149,20 @@ Ver `TECHNICAL_NOTES.md` para más detalles.
 
 ### ¿Por qué modo headless?
 ```typescript
-pdfjsLib.GlobalWorkerOptions.workerSrc = '';  // Sin worker
+// Importar desde legacy build para Node.js
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const loadingTask = pdfjsLib.getDocument({
+  data: new Uint8Array(pdfBuffer),
+  verbosity: 0,
+  worker: null as any,      // CRÍTICO: Desactiva el worker en Node.js
   useWorkerFetch: false,    // No usar worker fetch
   isEvalSupported: false,   // No evaluar código
   useSystemFonts: true,     // Usar fuentes del sistema
 });
 ```
 
-Esto evita dependencias de DOM/Canvas y funciona en entornos Node.js puros.
+Esto evita dependencias de DOM/Canvas y funciona en entornos Node.js puros. El legacy build es necesario en pdfjs-dist v5+ para compatibilidad con Node.js.
 
 ## 🚦 Estado del proyecto
 
