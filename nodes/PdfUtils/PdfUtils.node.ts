@@ -114,10 +114,11 @@ export class PdfUtils implements INodeType {
 						outputBinaryProperty,
 					);
 
-					// Add each page as a separate item
+					// Add each page as a separate item, preserving upstream JSON
 					splitResults.forEach((splitItem: INodeExecutionData, pageIndex: number) => {
 						returnData.push({
 							json: {
+								...items[itemIndex].json,
 								pageNumber: pageIndex + 1,
 								originalFileName: binaryData.fileName || 'document.pdf',
 							},
