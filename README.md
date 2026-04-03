@@ -7,6 +7,7 @@ Custom n8n node for PDF inspection, splitting, and decryption.
 ### 🔍 Inspect Operation
 - Analyzes PDF structure
 - Counts pages
+- **Detects if PDF is encrypted** (returns `isEncrypted: true` without failing)
 - Detects if PDF is vectorial (text-based) or rasterized (image-based)
 - Extracts text from first page
 - **Performance**: Very fast (tens of milliseconds)
@@ -81,9 +82,12 @@ npm install n8n-nodes-pdf-utils
 - `Text Threshold`: Minimum text length to consider PDF as vectorial (default: 50)
 
 **Output**: Single item with analysis + original PDF binary
+
+If the PDF is not encrypted:
 ```json
 {
   "json": {
+    "isEncrypted": false,
     "pageCount": 5,
     "isMultiPage": true,
     "isVectorial": false,
@@ -96,10 +100,24 @@ npm install n8n-nodes-pdf-utils
 }
 ```
 
+If the PDF is encrypted (no password needed to detect it):
+```json
+{
+  "json": {
+    "isEncrypted": true
+  },
+  "binary": {
+    "data": "<original PDF>"
+  }
+}
+```
+
 **Example workflow**:
 ```
 HTTP Request (download PDF)
   → PDF Utils (Inspect)
+    → IF (isEncrypted)
+      → PDF Utils (Decrypt) → PDF Utils (Inspect again)
     → IF (isVectorial)
       → Route A (text processing with PDF)
       → Route B (OCR processing with PDF)

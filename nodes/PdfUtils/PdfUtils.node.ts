@@ -42,7 +42,7 @@ export class PdfUtils implements INodeType {
 					{
 						name: 'Inspect',
 						value: 'inspect',
-						description: 'Analyze PDF structure and detect if it is vectorial',
+						description: 'Analyze PDF structure, detect if it is vectorial, and check if it is encrypted',
 						action: 'Inspect PDF file',
 					},
 					{
@@ -285,6 +285,7 @@ export class PdfUtils implements INodeType {
 			await pdfDocument.destroy();
 
 			return {
+				isEncrypted: false,
 				pageCount,
 				isMultiPage,
 				isVectorial,
@@ -292,9 +293,14 @@ export class PdfUtils implements INodeType {
 				firstPageText: text.substring(0, 200), // Preview of first 200 chars
 			};
 		} catch (error) {
+			// pdfjs-dist throws a PasswordException when the PDF is encrypted
+			const msg = (error as Error).message ?? '';
+			if (msg.toLowerCase().includes('password') || (error as any).name === 'PasswordException') {
+				return { isEncrypted: true };
+			}
 			throw new NodeOperationError(
 				this.getNode(),
-				`Failed to inspect PDF: ${(error as Error).message}`,
+				`Failed to inspect PDF: ${msg}`,
 				{ itemIndex },
 			);
 		}
