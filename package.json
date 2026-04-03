@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/infinitek-pe/n8n-nodes-pdf-utils.git"
+    "url": "https://github.com/rmichelena/n8n-nodes-pdf-utils.git"
   },
   "main": "dist/index.js",
   "scripts": {
