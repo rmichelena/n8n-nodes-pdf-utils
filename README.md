@@ -1,6 +1,6 @@
 # n8n-nodes-pdf-utils
 
-Custom n8n node for PDF inspection and splitting using pure npm packages.
+Custom n8n node for PDF inspection, splitting, and decryption.
 
 ## Features
 
@@ -15,6 +15,26 @@ Custom n8n node for PDF inspection and splitting using pure npm packages.
 - Splits multi-page PDFs into individual pages
 - Creates one output item per page
 - Preserves PDF quality and structure
+
+### 🔓 Decrypt Operation
+- Removes password protection from encrypted PDFs
+- Supports user and owner passwords
+- Outputs a clean, unencrypted PDF
+- **Requires `qpdf` installed on the host** (see [System Requirements](#system-requirements))
+
+## System Requirements
+
+The **Decrypt** operation requires `qpdf` to be installed on the host running n8n:
+
+```bash
+# Linux / Docker
+apt-get install qpdf
+
+# macOS
+brew install qpdf
+```
+
+All other operations (Inspect, Split, Inspect and Split) have **no system-level dependencies** — they use pure npm packages only.
 
 ## Installation
 
@@ -110,6 +130,37 @@ HTTP Request (download PDF)
 - Text-based PDFs (vectorial) → process as whole document
 - Scanned PDFs (non-vectorial) → OCR each page individually
 
+### Decrypt Operation
+
+**Input**: Binary data containing a password-protected PDF
+
+> **Requires `qpdf` installed on the host** — see [System Requirements](#system-requirements).
+
+**Parameters**:
+- `Binary Property`: Name of the input binary property (default: "data")
+- `Password`: User or owner password to decrypt the PDF
+- `Output Binary Property`: Name for the output binary property (default: "data")
+
+**Output**: Single item with the decrypted PDF binary
+```json
+{
+  "json": {
+    "decrypted": true,
+    "originalFileName": "document.pdf"
+  },
+  "binary": {
+    "data": "<decrypted PDF>"
+  }
+}
+```
+
+**Example workflow**:
+```
+HTTP Request (download encrypted PDF)
+  → PDF Utils (Decrypt)
+    → PDF Utils (Inspect or Split)
+```
+
 ### Split Operation
 
 **Input**: Binary data containing a multi-page PDF
@@ -135,17 +186,19 @@ HTTP Request (download PDF)
 ### Dependencies
 - `pdfjs-dist` (v5.4.394): For PDF analysis and text extraction (uses legacy build for Node.js)
 - `pdf-lib` (v1.17.1): For PDF manipulation and splitting
+- `qpdf` (system binary): Required only for the Decrypt operation
 
 ### Why These Libraries?
 
 1. **pdfjs-dist**: Mozilla's PDF.js library - battle-tested, used in Firefox (headless mode, no canvas needed). We use the legacy build (`pdfjs-dist/legacy/build/pdf.mjs`) which is specifically designed for Node.js environments without DOM dependencies.
 2. **pdf-lib**: Pure JavaScript, no native dependencies, excellent for manipulation
-3. **100% npm packages**: No system-level dependencies (like Poppler, Ghostscript) and no canvas/native modules!
+3. **qpdf**: The gold standard for PDF decryption — handles AES-128, AES-256, and RC4 encryption. Must be installed on the host system (not bundled in npm).
 
 ### Performance
 
 - **Inspect**: Very fast (~10-50ms for typical PDFs)
 - **Split**: Fast, scales linearly with page count (~50-200ms per page)
+- **Decrypt**: Depends on qpdf and PDF size (~100-500ms typical)
 
 ## Development
 
@@ -174,6 +227,19 @@ npm run format
 2. Check that the node is in `~/.n8n/nodes` or installed globally
 3. Verify `package.json` has correct `n8n.nodes` configuration
 
+### "qpdf is not installed" error
+
+Install qpdf on the host running n8n:
+```bash
+apt-get install qpdf   # Linux / Docker
+brew install qpdf      # macOS
+```
+
+If running n8n in Docker, add it to your Dockerfile:
+```dockerfile
+RUN apt-get update && apt-get install -y qpdf && rm -rf /var/lib/apt/lists/*
+```
+
 ### "pdfjs-dist" errors
 
 If you encounter issues with pdfjs-dist, ensure you're using Node.js 16 or higher:
@@ -195,6 +261,7 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## Roadmap
 
+- [x] Decrypt password-protected PDFs
 - [ ] Add merge operation
 - [ ] Add extract pages by range
 - [ ] Add rotate pages operation
