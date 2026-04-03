@@ -39,7 +39,7 @@ All other operations (Inspect, Split, Inspect and Split) have **no system-level 
 
 ## Installation
 
-### Option 1: Install from npm (when published)
+### Option 1: Install from npm
 
 ```bash
 npm install n8n-nodes-pdf-utils
