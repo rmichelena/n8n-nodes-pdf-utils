@@ -6,6 +6,15 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { writeFile, readFile, unlink } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { randomUUID } from 'crypto';
+
+const execFileAsync = promisify(execFile);
+
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { PDFDocument } from 'pdf-lib';
 
@@ -17,7 +26,7 @@ export class PdfUtils implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"]}}',
-		description: 'Inspect and split PDF files using pure npm packages',
+		description: 'Inspect, split, and decrypt PDF files',
 		defaults: {
 			name: 'PDF Utils',
 		},
@@ -41,6 +50,12 @@ export class PdfUtils implements INodeType {
 						value: 'inspectAndSplit',
 						description: 'Inspect PDF and split only if not vectorial',
 						action: 'Inspect and conditionally split PDF',
+					},
+					{
+						name: 'Decrypt',
+						value: 'decrypt',
+						description: 'Remove password protection from an encrypted PDF',
+						action: 'Decrypt PDF file',
 					},
 					{
 						name: 'Split',
@@ -72,16 +87,30 @@ export class PdfUtils implements INodeType {
 				description: 'Minimum text length to consider PDF as vectorial (text-based)',
 			},
 			{
+				displayName: 'Password',
+				name: 'password',
+				type: 'string',
+				typeOptions: { password: true },
+				displayOptions: {
+					show: {
+						operation: ['decrypt'],
+					},
+				},
+				default: '',
+				required: true,
+				description: 'Password to decrypt the PDF (user or owner password)',
+			},
+			{
 				displayName: 'Output Binary Property',
 				name: 'outputBinaryProperty',
 				type: 'string',
 				displayOptions: {
 					show: {
-						operation: ['split', 'inspectAndSplit'],
+						operation: ['split', 'inspectAndSplit', 'decrypt'],
 					},
 				},
 				default: 'data',
-				description: 'Name for the output binary property of split PDFs',
+				description: 'Name for the output binary property of the resulting PDF',
 			},
 		],
 	};
@@ -148,6 +177,36 @@ export class PdfUtils implements INodeType {
 							});
 						});
 					}
+				} else if (operation === 'decrypt') {
+					const password = this.getNodeParameter('password', itemIndex) as string;
+					const outputBinaryProperty = this.getNodeParameter(
+						'outputBinaryProperty',
+						itemIndex,
+					) as string;
+					const decryptedBuffer = await PdfUtils.prototype.decryptPdf.call(
+						this,
+						pdfBuffer,
+						password,
+						itemIndex,
+					);
+					const originalFileName = binaryData.fileName || 'document.pdf';
+					const baseFileName = originalFileName.replace(/\.pdf$/i, '');
+					const outputBinaryData = await this.helpers.prepareBinaryData(
+						decryptedBuffer,
+						`${baseFileName}_decrypted.pdf`,
+						'application/pdf',
+					);
+					returnData.push({
+						json: {
+							...items[itemIndex].json,
+							decrypted: true,
+							originalFileName,
+						},
+						binary: {
+							[outputBinaryProperty]: outputBinaryData,
+						},
+						pairedItem: { item: itemIndex },
+					});
 				} else if (operation === 'split') {
 					const outputBinaryProperty = this.getNodeParameter(
 						'outputBinaryProperty',
@@ -238,6 +297,48 @@ export class PdfUtils implements INodeType {
 				`Failed to inspect PDF: ${(error as Error).message}`,
 				{ itemIndex },
 			);
+		}
+	}
+
+	private async decryptPdf(
+		this: IExecuteFunctions,
+		pdfBuffer: Buffer,
+		password: string,
+		itemIndex: number,
+	): Promise<Buffer> {
+		const id = randomUUID();
+		const inputPath = join(tmpdir(), `pdf-decrypt-in-${id}.pdf`);
+		const outputPath = join(tmpdir(), `pdf-decrypt-out-${id}.pdf`);
+
+		try {
+			await writeFile(inputPath, pdfBuffer);
+			await execFileAsync('qpdf', ['--decrypt', `--password=${password}`, inputPath, outputPath]);
+			const decryptedBuffer = await readFile(outputPath);
+			return decryptedBuffer;
+		} catch (error) {
+			const msg = (error as Error).message;
+			if (msg.includes('ENOENT') || msg.includes('not found')) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'qpdf is not installed. Install it with: apt-get install qpdf (Linux) or brew install qpdf (macOS)',
+					{ itemIndex },
+				);
+			}
+			if (msg.includes('invalid password') || msg.includes('password')) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'Incorrect password for the encrypted PDF',
+					{ itemIndex },
+				);
+			}
+			throw new NodeOperationError(
+				this.getNode(),
+				`Failed to decrypt PDF: ${msg}`,
+				{ itemIndex },
+			);
+		} finally {
+			await unlink(inputPath).catch(() => {});
+			await unlink(outputPath).catch(() => {});
 		}
 	}
 
