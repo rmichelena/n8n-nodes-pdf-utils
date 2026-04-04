@@ -16,9 +16,10 @@ import { randomUUID } from 'crypto';
 const execFileAsync = promisify(execFile);
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-// Disable worker entirely for Node.js — prevents version mismatch errors
-(pdfjsLib as any).GlobalWorkerOptions.workerSrc = '';
-(pdfjsLib as any).GlobalWorkerOptions.workerPort = null;
+// Point workerSrc to our own bundled worker to prevent version mismatch with n8n's pdfjs-dist
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pdfjsWorkerPath: string = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
+(pdfjsLib as any).GlobalWorkerOptions.workerSrc = `file://${pdfjsWorkerPath}`;
 import { PDFDocument } from 'pdf-lib';
 
 export class PdfUtils implements INodeType {
