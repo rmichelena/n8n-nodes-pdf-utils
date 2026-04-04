@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf-utils",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Custom n8n node for PDF inspection, splitting, and decryption",
   "keywords": [
     "n8n-community-node-package",
