@@ -17,7 +17,6 @@ const execFileAsync = promisify(execFile);
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 // Point workerSrc to our own bundled worker to prevent version mismatch with n8n's pdfjs-dist
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const pdfjsWorkerPath: string = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
 (pdfjsLib as any).GlobalWorkerOptions.workerSrc = `file://${pdfjsWorkerPath}`;
 import { PDFDocument } from 'pdf-lib';
