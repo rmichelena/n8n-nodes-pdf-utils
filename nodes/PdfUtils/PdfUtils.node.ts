@@ -16,6 +16,9 @@ import { randomUUID } from 'crypto';
 const execFileAsync = promisify(execFile);
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+// Disable worker entirely for Node.js — prevents version mismatch errors
+(pdfjsLib as any).GlobalWorkerOptions.workerSrc = '';
+(pdfjsLib as any).GlobalWorkerOptions.workerPort = null;
 import { PDFDocument } from 'pdf-lib';
 
 export class PdfUtils implements INodeType {
